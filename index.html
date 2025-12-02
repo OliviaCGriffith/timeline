@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>IBM Power Timeline (Local)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="vendor/tailwind.min.css">
+  <style>
+    /* Minimal safe styles if Tailwind missing */
+    body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: #f8fafc; margin:0; }
+    .container { max-width:1100px; margin:40px auto; background:#fff; padding:28px; border-radius:12px; box-shadow:0 6px 30px rgba(2,6,23,0.08); }
+    .header { background: linear-gradient(90deg,#1e40af,#5b21b6); color:white; padding:20px;border-radius:8px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; margin-top:16px; }
+    label { display:block; font-weight:600; margin-bottom:6px; color:#374151; }
+    input[type=date] { padding:8px; border:1px solid #e5e7eb; border-radius:6px; }
+    .slider { width:100%; }
+    .btn { padding:10px 14px; border-radius:8px; background:#4f46e5; color:white; border:none; cursor:pointer; }
+    .timeline { position:relative; margin-top:60px; height:160px; }
+    .bar { position:absolute; left:0; right:0; top:50%; height:16px; transform:translateY(-50%); border-radius:999px; background:linear-gradient(90deg,#FDE68A,#FCA5A5,#C4B5FD,#60A5FA); }
+    .milestone { position:relative; width:120px; text-align:center; transform:translateY(-50%); }
+    .circle-outer { width:88px;height:88px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(2,6,23,0.08); border:6px solid #f3f4f6; margin:0 auto; }
+    .circle-inner { width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700; }
+    .controls { display:flex; gap:12px; flex-wrap:wrap; }
+    .col { flex:1; min-width:220px; }
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <div class="header">
+      <h1 style="font-size:28px;margin:0">IBM Power — Timeline</h1>
+    </div>
+
+    <div style="padding:18px">
+      <div style="margin-bottom:12px">
+        <strong>Pick a date type (required)</strong>
+      </div>
+
+      <div class="controls" style="margin-bottom:12px">
+        <label style="display:flex; gap:10px; align-items:center;">
+          <input type="radio" name="datetype" id="mode_po" value="po"> PO Received Date
+        </label>
+        <label style="display:flex; gap:10px; align-items:center;">
+          <input type="radio" name="datetype" id="mode_end" value="end"> End of Migration Date
+        </label>
+      </div>
+
+      <div class="row" id="fieldsRow">
+        <!-- date fields appear here -->
+      </div>
+
+      <div class="row" style="margin-top:12px">
+        <div class="col">
+          <label># S1022/1122 — <span id="s1022Val">0</span></label>
+          <input type="range" id="s1022" class="slider" min="0" max="25" value="0">
+        </div>
+        <div class="col">
+          <label># S1024/1124 — <span id="s1024Val">0</span></label>
+          <input type="range" id="s1024" class="slider" min="0" max="25" value="0">
+        </div>
+        <div class="col">
+          <label># E1050/1150 — <span id="e1050Val">0</span></label>
+          <input type="range" id="e1050" class="slider" min="0" max="20" value="0">
+        </div>
+        <div class="col">
+          <label># E1080/1180 — <span id="e1080Val">0</span></label>
+          <input type="range" id="e1080" class="slider" min="0" max="10" value="0">
+        </div>
+        <div class="col">
+          <label>LPAR Count — <span id="lparsVal">0</span></label>
+          <input type="range" id="lpars" class="slider" min="0" max="200" step="5" value="0">
+        </div>
+      </div>
+
+      <div style="text-align:right; margin-top:12px">
+        <button class="btn" id="btnGenerate">Next</button>
+      </div>
+
+      <div id="result" style="display:none">
+        <h2 style="margin-top:28px">Timeline Result</h2>
+
+        <div class="timeline" id="timelineArea">
+          <div class="bar"></div>
+          <div style="display:flex;justify-content:space-between;position:relative;z-index:2;padding:0 24px">
+            <div class="milestone" id="m0">
+              <div class="circle-outer"><div class="circle-inner" id="c0" style="background:linear-gradient(180deg,#FDE68A,#FBBF24)">Date</div></div>
+              <div style="margin-top:10px;font-weight:700">PO Received</div>
+            </div>
+            <div class="milestone" id="m1">
+              <div class="circle-outer"><div class="circle-inner" id="c1" style="background:linear-gradient(180deg,#FDBA74,#FB923C)">Date</div></div>
+              <div style="margin-top:10px;font-weight:700">Build / Ship</div>
+            </div>
+            <div class="milestone" id="m2">
+              <div class="circle-outer"><div class="circle-inner" id="c2" style="background:linear-gradient(180deg,#C4B5FD,#8B5CF6)">Date</div></div>
+              <div style="margin-top:10px;font-weight:700">Installation</div>
+            </div>
+            <div class="milestone" id="m3">
+              <div class="circle-outer"><div class="circle-inner" id="c3" style="background:linear-gradient(180deg,#93C5FD,#2563EB)">Date</div></div>
+              <div style="margin-top:10px;font-weight:700">End Migration</div>
+            </div>
+          </div>
+
+          <div style="text-align:center;margin-top:18px">
+            <button class="btn" id="btnDownload">Download PPT</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <p style="font-size:12px;color:#6b7280;margin:18px">Note: Vendor libraries are included in the ZIP under <code>/vendor</code>. If not present, run <code>download_vendors.sh</code> to fetch them.</p>
+  </div>
+
+  <script>
+    // minimal app logic (vanilla JS)
+    const modePo = document.getElementById('mode_po');
+    const modeEnd = document.getElementById('mode_end');
+    const fieldsRow = document.getElementById('fieldsRow');
+
+    const s1022 = document.getElementById('s1022');
+    const s1024 = document.getElementById('s1024');
+    const e1050 = document.getElementById('e1050');
+    const e1080 = document.getElementById('e1080');
+    const lpars = document.getElementById('lpars');
+
+    const s1022Val = document.getElementById('s1022Val');
+    const s1024Val = document.getElementById('s1024Val');
+    const e1050Val = document.getElementById('e1050Val');
+    const e1080Val = document.getElementById('e1080Val');
+    const lparsVal = document.getElementById('lparsVal');
+
+    [s1022,s1024,e1050,e1080,lpars].forEach(el=>{
+      el.addEventListener('input', ()=> {
+        s1022Val.textContent = s1022.value;
+        s1024Val.textContent = s1024.value;
+        e1050Val.textContent = e1050.value;
+        e1080Val.textContent = e1080.value;
+        lparsVal.textContent = lpars.value;
+      });
+    });
+
+    function clearDateFields() {
+      fieldsRow.innerHTML = '';
+    }
+
+    function showDateField(mode) {
+      clearDateFields();
+      const div = document.createElement('div');
+      div.style.minWidth = '240px';
+      const label = document.createElement('label');
+      label.textContent = mode === 'po' ? 'PO Received Date' : 'End of Migration Date';
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.id = mode === 'po' ? 'poDate' : 'endDate';
+      input.style.marginTop = '6px';
+      input.style.padding = '8px';
+      input.style.border = '1px solid #e5e7eb';
+      input.style.borderRadius = '6px';
+      div.appendChild(label);
+      div.appendChild(input);
+      fieldsRow.appendChild(div);
+    }
+
+    modePo.addEventListener('change', ()=> showDateField('po'));
+    modeEnd.addEventListener('change', ()=> showDateField('end'));
+
+    function calcWeeks(count){
+      const c = Number(count)||0;
+      if(c===0) return 0;
+      if(c<=10) return 1;
+      if(c<=20) return 2;
+      return 3;
+    }
+    function addDays(d, n){
+      const x = new Date(d);
+      x.setDate(x.getDate() + n);
+      return x;
+    }
+
+    document.getElementById('btnGenerate').addEventListener('click', ()=> {
+      const mode = modePo.checked ? 'po' : (modeEnd.checked ? 'end' : null);
+      if(!mode){ alert('Please choose PO or End date'); return; }
+      const dateInput = document.getElementById(mode==='po'?'poDate':'endDate');
+      if(!dateInput || !dateInput.value){ alert('Please enter the selected date'); return; }
+
+      let po, buildShip, install, endMigration;
+      if(mode==='po'){
+        po = new Date(dateInput.value);
+        buildShip = addDays(po,21);
+        install = new Date(buildShip);
+        install = addDays(install, calcWeeks(s1022.value)*7);
+        install = addDays(install, calcWeeks(s1024.value)*7);
+        install = addDays(install, calcWeeks(e1050.value)*7);
+        install = addDays(install, calcWeeks(e1080.value)*7);
+        endMigration = addDays(install, 5 + Math.floor(Number(lpars.value)/12));
+      } else {
+        endMigration = new Date(dateInput.value);
+        install = addDays(endMigration, -(5 + Math.floor(Number(lpars.value)/12)));
+        install = addDays(install, -calcWeeks(e1080.value)*7);
+        install = addDays(install, -calcWeeks(e1050.value)*7);
+        install = addDays(install, -calcWeeks(s1024.value)*7);
+        install = addDays(install, -calcWeeks(s1022.value)*7);
+        buildShip = addDays(install, -21);
+        po = new Date(buildShip);
+      }
+
+      // populate timeline UI
+      document.getElementById('c0').textContent = po.toLocaleDateString();
+      document.getElementById('c1').textContent = buildShip.toLocaleDateString();
+      document.getElementById('c2').textContent = install.toLocaleDateString();
+      document.getElementById('c3').textContent = endMigration.toLocaleDateString();
+
+      document.getElementById('result').style.display = 'block';
+      // store results for PPT
+      window.__pptTimeline = { po, buildShip, install, endMigration };
+      // scroll to result
+      setTimeout(()=> document.getElementById('timelineArea').scrollIntoView({ behavior:'smooth' }), 50);
+    });
+
+    document.getElementById('btnDownload').addEventListener('click', async ()=> {
+      const data = window.__pptTimeline;
+      if(!data){ alert('Generate the timeline first'); return; }
+      const P = window.PptxGenJS;
+      if(!P){ alert('PptxGenJS not found. Ensure vendor/pptxgen.bundle.js exists or run download_vendors.sh'); return; }
+      try {
+        const pptx = new P();
+        const slide = pptx.addSlide();
+        slide.addText('IBM Power Timeline', { x:0.5,y:0.3, fontSize:28, bold:true });
+        const lines = [
+          `1. ${data.po.toLocaleDateString()} - PO Received Date`,
+          `2. ${data.buildShip.toLocaleDateString()} - Build / Ship Date`,
+          `3. ${data.install.toLocaleDateString()} - Data Center Installation Date`,
+          `4. ${data.endMigration.toLocaleDateString()} - End of Migration Date`
+        ];
+        slide.addText(lines.join('\n'), { x:0.5,y:1.0, fontSize:18 });
+        await pptx.writeFile({ fileName: 'IBM_Power_Timeline.pptx' });
+      } catch(err){
+        console.error(err);
+        alert('Failed to create PPT: '+ (err && err.message?err.message:err));
+      }
+    });
+  </script>
+
+</body>
+</html>

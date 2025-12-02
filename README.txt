@@ -1,0 +1,1 @@
+Run download_vendors.sh to fetch vendor libraries (curl required). Then open index.html in your browser or serve the folder via Live Server.
